@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizMaster - Industrial Grade Quiz System</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/industrial-premium.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+    <header id="main-header" class="hidden">
+        <div class="container navbar">
+            <div class="logo" onclick="const user = auth.getCurrentUser(); if (user) app.routeUser(user);" style="cursor: pointer;" title="Go to Dashboard">QuizMaster</div>
+            <div class="nav-links">
+                <div class="user-info">
+                    <div class="user-avatar" id="user-avatar">U</div>
+                    <span id="user-display-name">Welcome</span>
+                </div>
+                <div class="notification-bell-container" id="notification-bell-btn" onclick="notificationCenter.toggleNotificationDropdown()" title="Notifications">
+                    <span class="notification-bell">🔔</span>
+                    <span id="notification-badge" class="notification-badge hidden">0</span>
+                    <div class="notification-dropdown" id="notification-dropdown">
+                        <div class="notification-header">
+                            <h4>Notifications</h4>
+                        </div>
+                        <div class="notification-body" id="notification-dropdown-list">
+                            <!-- Notifications will be loaded here -->
+                        </div>
+                        <div class="notification-footer">
+                            <button onclick="notificationCenter.openNotificationCenter()">View All</button>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="app.toggleTheme()" id="theme-btn" title="Toggle Theme">🌙</button>
+                <button onclick="app.logout()" title="Logout">🚪 Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- LOGIN VIEW -->
+        <section id="login-view" class="view-section active">
+            <div class="login-container">
+                <div class="login-header">
+                    <h2>Welcome to QuizMaster</h2>
+                    <p>Please sign in to continue</p>
+                </div>
+                <form class="login-form" onsubmit="event.preventDefault(); app.handleLogin(); return false;">
+                    <div class="form-group">
+                        <label for="login-username">Username</label>
+                        <div class="input-container">
+                            <span class="input-icon">👤</span>
+                            <input type="text" id="login-username" placeholder="Enter your username" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <div class="input-container">
+                            <span class="input-icon">🔒</span>
+                            <input type="password" id="login-password" placeholder="Enter your password" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn login-btn">Sign In</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ADMIN DASHBOARD -->
+        <section id="admin-dashboard" class="view-section admin-dashboard">
+            <div class="dashboard-welcome">
+                <h2>🎯 Admin Dashboard</h2>
+                <p>Manage users, monitor system activity, and oversee quiz operations</p>
+            </div>
+
+            <div class="quick-actions">
+                <div class="quick-action-card" onclick="app.showBulkUserImport()" style="--card-index: 0;">
+                    <span class="action-icon">📥</span>
+                    <h4>Bulk Import Users</h4>
+                    <p>Import multiple users from CSV or JSON files</p>
+                </div>
+                <div class="quick-action-card" onclick="app.exportUsers()" style="--card-index: 1;">
+                    <span class="action-icon">📤</span>
+                    <h4>Export Users</h4>
+                    <p>Download user data for backup or analysis</p>
+                </div>
+                <div class="quick-action-card" onclick="app.adminBackupData()" style="--card-index: 2;">
+                    <span class="action-icon">💾</span>
+                    <h4>System Backup</h4>
+                    <p>Create a complete system data backup</p>
+                </div>
+                <div class="quick-action-card" onclick="app.showNotificationCenter()" style="--card-index: 3;">
+                    <span class="action-icon">📢</span>
+                    <h4>Send Notifications</h4>
+                    <p>Broadcast messages to users</p>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="card" style="--card-index: 0;">
+                    <h3>👥 Total Users</h3>
+                    <div class="stat-number" id="admin-total-users">0</div>
+                    <p style="margin: 10px 0 0 0; color: #666; font-size: 0.9rem;">Active system users</p>
+                </div>
+                <div class="card" style="--card-index: 1;">
+                    <h3>🎓 Students</h3>
+                    <div class="stat-number" id="admin-total-students">0</div>
+                    <p style="margin: 10px 0 0 0; color: #666; font-size: 0.9rem;">Registered students</p>
+                </div>
+                <div class="card" style="--card-index: 2;">
+                    <h3>👨‍🏫 Teachers</h3>
+                    <div class="stat-number" id="admin-total-teachers">0</div>
+                    <p style="margin: 10px 0 0 0; color: #666; font-size: 0.9rem;">Active instructors</p>
+                </div>
+                <div class="card" style="--card-index: 3;">
+                    <h3>📚 Groups</h3>
+                    <div class="stat-number" id="admin-total-groups">0</div>
+                    <p style="margin: 10px 0 0 0; color: #666; font-size: 0.9rem;">Class groups created</p>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 20px;">
+                <h3>User Management</h3>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button class="btn" style="width: auto; background: #3498db;" onclick="app.showBulkUserImport()">📥 Bulk Import Users</button>
+                    <button class="btn" style="width: auto; background: #2ecc71;" onclick="app.exportUsers()">📤 Export Users</button>
+                </div>
+                <div class="form-group" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label>Username</label>
+                        <input type="text" id="admin-new-username" placeholder="Username">
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label>Password</label>
+                        <input type="password" id="admin-new-password" placeholder="Password">
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label>Name</label>
+                        <input type="text" id="admin-new-name" placeholder="Full Name">
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label>Role</label>
+                        <select id="admin-new-role">
+                            <option value="student">Student</option>
+                            <option value="teacher">Teacher</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label>Email (Optional)</label>
+                        <input type="email" id="admin-new-email" placeholder="email@example.com">
+                    </div>
+                    <button class="btn btn-success" style="width: auto; margin-bottom: 0;" onclick="app.adminAddUser()">Add User</button>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 20px;">
+                <h3>System Maintenance</h3>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="btn" onclick="app.adminBackupData()">💾 Backup Data (JSON)</button>
+                    <div style="position: relative; overflow: hidden; display: inline-block;">
+                        <button class="btn btn-danger">📂 Restore Data (JSON)</button>
+                        <input type="file" id="restore-file-input" accept=".json" onchange="app.adminRestoreData(this)" style="font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                    <h3 style="margin: 0;">System Users</h3>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn" style="width: auto; background: #2ecc71;" onclick="app.toggleUserView()" id="toggle-view-btn">📋 Switch to Table</button>
+                    </div>
+                </div>
+                <div class="filter-bar">
+                    <input type="text" id="admin-user-search" placeholder="🔍 Search by name, username, or email..." oninput="app.filterUsers()">
+                    <select id="admin-user-role-filter" onchange="app.filterUsers()">
+                        <option value="">All Roles</option>
+                        <option value="student">Students</option>
+                        <option value="teacher">Teachers</option>
+                        <option value="admin">Admins</option>
+                    </select>
+                </div>
+                <div id="admin-users-list" class="user-card-grid">
+                    <!-- Users will be rendered here -->
+                </div>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn" style="width: auto; background: #e74c3c;" onclick="app.bulkDeleteUsers()">🗑️ Delete Selected</button>
+                    <button class="btn" style="width: auto; background: #3498db;" onclick="app.bulkAssignGroup()">👥 Assign to Group</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- STUDENT GROUPS VIEW -->
+        <section id="student-groups-view" class="view-section">
+            <div style="margin-bottom: 20px;">
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showTeacherDashboard()">Back to Dashboard</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Student Groups</h2>
+                <button class="btn btn-success" style="width: auto;" onclick="app.showCreateGroup()">+ Create Group</button>
+            </div>
+
+            <div id="groups-list" class="dashboard-grid">
+                <!-- Groups will be listed here -->
+            </div>
+        </section>
+
+        <!-- TEACHER DASHBOARD -->
+        <section id="teacher-dashboard" class="view-section teacher-dashboard">
+            <div class="dashboard-welcome">
+                <h2>👨‍🏫 Teacher Dashboard</h2>
+                <p>Create quizzes, manage students, and track performance analytics</p>
+            </div>
+
+            <div class="quick-actions">
+                <div class="quick-action-card" onclick="app.showCreateQuiz()" style="--card-index: 0;">
+                    <span class="action-icon">➕</span>
+                    <h4>Create New Quiz</h4>
+                    <p>Design and publish a new quiz</p>
+                </div>
+                <div class="quick-action-card" onclick="app.showQuestionBank()" style="--card-index: 1;">
+                    <span class="action-icon">📚</span>
+                    <h4>Question Bank</h4>
+                    <p>Manage reusable questions</p>
+                </div>
+                <div class="quick-action-card" onclick="app.showGradingQueue()" style="--card-index: 2;">
+                    <span class="action-icon">✏️</span>
+                    <h4>Grade Submissions</h4>
+                    <p>Review and grade student work</p>
+                </div>
+                <div class="quick-action-card" onclick="app.showTeacherAnalytics()" style="--card-index: 3;">
+                    <span class="action-icon">📊</span>
+                    <h4>View Analytics</h4>
+                    <p>Analyze student performance</p>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="card" style="--card-index: 0;">
+                    <h3>📝 Total Quizzes</h3>
+                    <div class="stat-number" id="teacher-total-quizzes">0</div>
+                    <p style="margin: 10px 0 0 0; color: #666; font-size: 0.9rem;">Quizzes created</p>
+                </div>
+                <div class="card" style="--card-index: 1;">
+                    <h3>🎓 Total Students</h3>
+                    <div class="stat-number" id="teacher-total-students">0</div>
+                    <p style="margin: 10px 0 0 0; color: #666; font-size: 0.9rem;">Students enrolled</p>
+                </div>
+                <div class="card" style="--card-index: 2;">
+                    <h3>⏳ Pending Reviews</h3>
+                    <div class="stat-number">0</div>
+                    <p style="margin: 10px 0 0 0; color: #666; font-size: 0.9rem;">Awaiting grading</p>
+                </div>
+                <div class="card" style="--card-index: 3;">
+                    <h3>📈 Average Score</h3>
+                    <div class="stat-number small">85%</div>
+                    <p style="margin: 10px 0 0 0; color: #666; font-size: 0.9rem;">Class performance</p>
+                </div>
+            </div>
+
+            <h3>Your Quizzes</h3>
+            <table id="teacher-quiz-table" class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Questions</th>
+                        <th>Time Limit</th>
+                        <th>Status</th>
+                        <th>Grading</th>
+                        <th>Results</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="teacher-quiz-list">
+                    <!-- Quiz rows will be injected here -->
+                </tbody>
+            </table>
+
+            <div class="card" style="margin-top: 30px; border-top: 4px solid var(--secondary-color);">
+                <h3>System Data Management</h3>
+                <p>Export all system data (quizzes, users, results) to JSON or clear system.</p>
+                <div style="margin-top: 15px;">
+                    <button class="btn" style="width: auto; background: #8e44ad;" onclick="app.exportData()">Export Data (JSON)</button>
+                    <button class="btn btn-danger" style="width: auto;" onclick="app.clearData()">Reset System</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- QUIZ TEMPLATES VIEW -->
+        <section id="quiz-templates-view" class="view-section">
+            <div style="margin-bottom: 20px;">
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showTeacherDashboard()">Back to Dashboard</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Quiz Templates</h2>
+                <button class="btn btn-success" style="width: auto;" onclick="app.saveCurrentQuizAsTemplate()">Save Current Quiz as Template</button>
+            </div>
+
+            <div id="templates-list" class="dashboard-grid">
+                <!-- Templates will be listed here -->
+            </div>
+        </section>
+
+        <!-- QUESTION BANK VIEW -->
+        <section id="question-bank-view" class="view-section">
+            <div style="margin-bottom: 20px;">
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showTeacherDashboard()">Back to Dashboard</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Question Bank</h2>
+                <button class="btn btn-success" style="width: auto;" onclick="app.showAddQuestionToBank()">+ Add Question</button>
+            </div>
+            
+            <div class="card" style="margin-bottom: 20px;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                    <input type="text" id="qb-search" placeholder="Search questions..." style="flex: 1; min-width: 200px; padding: 8px;" oninput="app.searchQuestionBank()">
+                    <select id="qb-filter-topic" style="padding: 8px;" onchange="app.searchQuestionBank()">
+                        <option value="">All Topics</option>
+                    </select>
+                    <select id="qb-filter-difficulty" style="padding: 8px;" onchange="app.searchQuestionBank()">
+                        <option value="">All Difficulties</option>
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                    <select id="qb-filter-type" style="padding: 8px;" onchange="app.searchQuestionBank()">
+                        <option value="">All Types</option>
+                        <option value="multiple_choice">Multiple Choice</option>
+                        <option value="true_false">True/False</option>
+                        <option value="short_answer">Short Answer</option>
+                        <option value="fill_in_blank">Fill in Blank</option>
+                        <option value="image_question">Image Question</option>
+                        <option value="video_question">Video Question</option>
+                    </select>
+                    <button class="btn" style="width: auto; background: #8e44ad;" onclick="app.exportQuestionBank()">Export</button>
+                    <div style="position: relative; overflow: hidden; display: inline-block;">
+                        <button class="btn" style="width: auto; background: #16a085;">Import</button>
+                        <input type="file" id="qb-import-file" accept=".json" onchange="app.importQuestionBank(this)" style="font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0;">
+                    </div>
+                </div>
+            </div>
+
+            <div id="question-bank-list" class="dashboard-grid">
+                <!-- Questions will be listed here -->
+            </div>
+        </section>
+
+        <!-- CREATE QUIZ VIEW -->
+        <section id="create-quiz-view" class="view-section">
+            <div style="margin-bottom: 20px;">
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showTeacherDashboard()">Back to Dashboard</button>
+            </div>
+            <h2>Create New Quiz</h2>
+            <div class="card">
+                <div class="form-group">
+                    <label>Quiz Title</label>
+                    <input type="text" id="new-quiz-title" placeholder="e.g. Mathematics Final">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="new-quiz-desc" placeholder="Brief description of the quiz..." style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; min-height: 80px; font-family: inherit; resize: vertical;"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Time Limit (minutes)</label>
+                        <input type="number" id="new-quiz-time" value="10" min="1" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>Difficulty Level</label>
+                        <select id="new-quiz-difficulty" class="form-control">
+                            <option value="easy">Easy</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Quiz Status</label>
+                        <select id="new-quiz-status" class="form-control">
+                            <option value="draft">Draft</option>
+                            <option value="published">Published</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Category/Tags (comma-separated)</label>
+                    <input type="text" id="new-quiz-category" placeholder="e.g. Mathematics, Algebra, Final Exam" class="form-control">
+                    <small style="color: #666; font-size: 0.85rem;">Separate multiple categories with commas</small>
+                </div>
+                <div class="form-group">
+                    <label>Start Date (Optional)</label>
+                    <input type="datetime-local" id="new-quiz-start-date">
+                </div>
+                <div class="form-group">
+                    <label>End Date (Optional)</label>
+                    <input type="datetime-local" id="new-quiz-end-date">
+                </div>
+                <div class="form-group">
+                    <label>Quiz Password (Optional - leave empty for no password)</label>
+                    <input type="password" id="new-quiz-password" placeholder="Enter password to protect quiz">
+                </div>
+                <div class="form-group">
+                    <label>Quiz Instructions (Optional)</label>
+                    <textarea id="new-quiz-instructions" placeholder="Enter instructions for students..." style="width: 100%; padding: 10px; min-height: 100px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+                </div>
+                <div class="form-group" style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 5px;">
+                        <input type="checkbox" id="new-quiz-randomize-questions">
+                        Randomize Question Order
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px;">
+                        <input type="checkbox" id="new-quiz-randomize-options">
+                        Randomize Answer Options
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px;">
+                        <input type="checkbox" id="new-quiz-allow-retake">
+                        Allow Retakes
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px;">
+                        <input type="checkbox" id="new-quiz-show-explanations">
+                        Show Explanations After Submission
+                    </label>
+                </div>
+                <div class="card" style="margin-top: 20px; padding: 15px; background: #f8f9fa;">
+                    <h3 style="margin-bottom: 15px;">Grading & Results Settings</h3>
+                    <div class="form-group">
+                        <label>Grading Mode</label>
+                        <select id="new-quiz-grading-mode" onchange="app.toggleGradingSettings()">
+                            <option value="auto">Auto Grading (Instant)</option>
+                            <option value="manual">Manual Grading Required</option>
+                            <option value="auto_delayed">Auto Grading (Delayed)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pass Mark (%)</label>
+                        <input type="number" id="new-quiz-pass-mark" min="0" max="100" value="50" class="form-control">
+                    </div>
+                    <div class="form-group" id="grading-delay-container" style="display: none;">
+                        <label>Show Results At (Date & Time)</label>
+                        <input type="datetime-local" id="new-quiz-results-time">
+                    </div>
+                    <div class="form-group">
+                        <label>When to Show Answers</label>
+                        <select id="new-quiz-show-answers" onchange="app.toggleGradingSettings()">
+                            <option value="immediately">Immediately After Submission</option>
+                            <option value="after_grading">After Grading Complete</option>
+                            <option value="scheduled">At Scheduled Time</option>
+                            <option value="never">Never (Hide Answers)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="answers-time-container" style="display: none;">
+                        <label>Show Answers At (Date & Time)</label>
+                        <input type="datetime-local" id="new-quiz-answers-time">
+                    </div>
+                    <div class="form-group">
+                        <label>When to Show Grades</label>
+                        <select id="new-quiz-show-grades" onchange="app.toggleGradingSettings()">
+                            <option value="immediately">Immediately After Submission</option>
+                            <option value="after_grading">After Grading Complete</option>
+                            <option value="scheduled">At Scheduled Time</option>
+                            <option value="never">Never (Hide Grades)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="grades-time-container" style="display: none;">
+                        <label>Show Grades At (Date & Time)</label>
+                        <input type="datetime-local" id="new-quiz-grades-time">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Assign to Students/Groups</label>
+                    <div id="quiz-assignment-container" style="padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <p style="font-size: 0.9em; color: #666; margin: 0;">Leave empty to make quiz available to all students</p>
+                            <button type="button" class="btn" style="width: auto; padding: 3px 10px; font-size: 0.85rem; background: #95a5a6;" onclick="app.populateAssignmentDropdowns()" title="Refresh dropdowns">🔄 Refresh</button>
+                        </div>
+                        <div id="quiz-assigned-students" style="margin-bottom: 10px;">
+                            <!-- Assigned students will be listed here -->
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <select id="quiz-assign-student-select" class="form-control" style="flex: 1; min-width: 150px;">
+                                <option value="">Select Student...</option>
+                            </select>
+                            <select id="quiz-assign-group-select" class="form-control" style="flex: 1; min-width: 150px;">
+                                <option value="">Select Group...</option>
+                            </select>
+                            <button type="button" class="btn" style="width: auto; padding: 5px 15px; background: #3498db;" onclick="app.addQuizAssignment()">Add</button>
+                        </div>
+                        <div id="assignment-dropdown-status" style="margin-top: 10px; font-size: 0.85rem; color: #666;"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Quiz Sections (Optional - leave empty for single section)</label>
+                    <div id="quiz-sections-container">
+                        <div class="section-item" style="margin-bottom: 10px;">
+                            <input type="text" class="section-title" placeholder="Section Title (e.g., Mathematics)" style="width: 200px; padding: 5px;">
+                            <input type="number" class="section-time" placeholder="Time (min)" style="width: 100px; padding: 5px; margin-left: 10px;">
+                            <button onclick="this.parentElement.remove()" style="background: #e74c3c; color: white; border: none; padding: 5px 10px; cursor: pointer; margin-left: 10px;">Remove</button>
+                        </div>
+                    </div>
+                    <button class="btn" style="width: auto; background: #3498db; font-size: 0.9rem; padding: 5px 10px;" onclick="app.addQuizSection()">+ Add Section</button>
+                </div>
+
+                <h3>Questions</h3>
+                <div id="questions-container">
+                    <!-- Questions will be added here -->
+                </div>
+                
+                <button class="btn" style="width: auto; margin-top: 10px;" onclick="app.addQuestionBlock()">+ Add Question</button>
+                <hr style="margin: 20px 0;">
+                <button class="btn btn-success" onclick="app.saveQuiz()">Save Quiz</button>
+            </div>
+        </section>
+
+        <!-- STUDENT DASHBOARD -->
+        <section id="student-dashboard" class="view-section student-dashboard">
+            <div class="dashboard-welcome">
+                <h2>🎓 Student Dashboard</h2>
+                <p>Take quizzes, track your progress, and view your performance</p>
+            </div>
+
+            <div class="quick-actions">
+                <div class="quick-action-card" onclick="app.showStudentAnalytics()" style="--card-index: 0;">
+                    <span class="action-icon">📊</span>
+                    <h4>My Analytics</h4>
+                    <p>View detailed performance stats</p>
+                </div>
+                <div class="quick-action-card" onclick="app.showLeaderboard()" style="--card-index: 1;">
+                    <span class="action-icon">🏆</span>
+                    <h4>Leaderboard</h4>
+                    <p>See how you rank among peers</p>
+                </div>
+                <div class="quick-action-card" onclick="app.exportMyGrades()" style="--card-index: 2;">
+                    <span class="action-icon">📄</span>
+                    <h4>Export Grades</h4>
+                    <p>Download your grade report</p>
+                </div>
+                <div class="quick-action-card" onclick="app.showStudentResults()" style="--card-index: 3;">
+                    <span class="action-icon">📈</span>
+                    <h4>My Results</h4>
+                    <p>Review past quiz attempts</p>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="card" style="--card-index: 0;">
+                    <h3>📝 Quizzes Attempted</h3>
+                    <div class="stat-number" id="student-attempts-count">0</div>
+                    <p style="margin: 10px 0 0 0; color: #666; font-size: 0.9rem;">Total quiz attempts</p>
+                </div>
+                <div class="card" style="--card-index: 1;">
+                    <h3>📊 Average Score</h3>
+                    <div class="stat-number" id="student-avg-score">0%</div>
+                    <p style="margin: 10px 0 0 0; color: #666; font-size: 0.9rem;">Overall performance</p>
+                </div>
+                <div class="card" style="--card-index: 2;">
+                    <h3>🏅 Highest Score</h3>
+                    <div class="stat-number small">0%</div>
+                    <p style="margin: 10px 0 0 0; color: #666; font-size: 0.9rem;">Personal best</p>
+                </div>
+                <div class="card" style="--card-index: 3;">
+                    <h3>📈 Improvement</h3>
+                    <div class="stat-number small">0%</div>
+                    <p style="margin: 10px 0 0 0; color: #666; font-size: 0.9rem;">Score progression</p>
+                </div>
+            </div>
+
+            <!-- Performance Chart -->
+            <div class="performance-chart-container">
+                <h3>📈 Performance History (Last 5 Attempts)</h3>
+                <div id="student-performance-chart" style="height: 200px; display: flex; align-items: flex-end; gap: 15px; padding-top: 20px; justify-content: center;">
+                    <!-- Bars injected here -->
+                    <p style="color:#777; width:100%; text-align:center; align-self:center;">No attempts yet.</p>
+                </div>
+            </div>
+
+            <h3>Available Quizzes</h3>
+            <div id="student-quiz-list" class="dashboard-grid">
+                <!-- Quiz cards will be injected here -->
+            </div>
+
+            <h3>My Grades & Results</h3>
+            <div class="card" style="margin-bottom: 20px;">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <label>Filter by Quiz:</label>
+                    <select id="student-results-filter-quiz" style="padding: 8px;" onchange="app.filterStudentResults()">
+                        <option value="">All Quizzes</option>
+                    </select>
+                    <label>Filter by Grade:</label>
+                    <select id="student-results-filter-grade" style="padding: 8px;" onchange="app.filterStudentResults()">
+                        <option value="">All Grades</option>
+                        <option value="A">A (90-100%)</option>
+                        <option value="B">B (80-89%)</option>
+                        <option value="C">C (70-79%)</option>
+                        <option value="D">D (60-69%)</option>
+                        <option value="F">F (0-59%)</option>
+                    </select>
+                </div>
+            </div>
+            <table id="student-results-table" class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Quiz</th>
+                        <th>Date</th>
+                        <th>Score</th>
+                        <th>Grade</th>
+                        <th>Points</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="student-results-list">
+                    <!-- Results -->
+                </tbody>
+            </table>
+
+            <div style="margin-top: 20px;">
+                <button class="btn" style="width: auto; background: #9b59b6;" onclick="app.showStudentAnalytics()">📊 View Analytics</button>
+                <button class="btn" style="width: auto; background: #16a085; margin-left: 10px;" onclick="app.exportMyGrades()">📥 Export My Grades</button>
+            </div>
+        </section>
+
+        <!-- STUDENT PERFORMANCE VIEW -->
+        <section id="student-performance-view" class="view-section">
+            <div style="margin-bottom: 20px;">
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showTeacherDashboard()">Back to Dashboard</button>
+            </div>
+            <h2>Student Performance & History</h2>
+            
+            <div class="card" style="margin-bottom: 20px;">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <label>Filter by Group/Class:</label>
+                    <select id="performance-filter-group" style="padding: 8px;" onchange="app.filterStudentPerformance()">
+                        <option value="">All Groups</option>
+                    </select>
+                    <label>Filter by Quiz:</label>
+                    <select id="performance-filter-quiz" style="padding: 8px;" onchange="app.filterStudentPerformance()">
+                        <option value="">All Quizzes</option>
+                    </select>
+                    <label>Filter by Grade Range:</label>
+                    <select id="performance-filter-grade" style="padding: 8px;" onchange="app.filterStudentPerformance()">
+                        <option value="">All Grades</option>
+                        <option value="90-100">A (90-100%)</option>
+                        <option value="80-89">B (80-89%)</option>
+                        <option value="70-79">C (70-79%)</option>
+                        <option value="60-69">D (60-69%)</option>
+                        <option value="0-59">F (0-59%)</option>
+                    </select>
+                    <button class="btn" style="width: auto; background: #3498db;" onclick="app.exportStudentPerformance()">📥 Export Report</button>
+                </div>
+            </div>
+
+            <div id="student-performance-list">
+                <!-- Students will be listed here -->
+            </div>
+        </section>
+
+        <!-- STUDENT DETAIL VIEW -->
+        <section id="student-detail-view" class="view-section">
+            <div style="margin-bottom: 20px;">
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showStudentPerformance()">Back to Performance</button>
+            </div>
+            <h2 id="student-detail-name">Student Details</h2>
+            
+            <div class="dashboard-grid" style="margin-bottom: 20px;">
+                <div class="card">
+                    <h3>Total Attempts</h3>
+                    <div class="stat-number" id="detail-total-attempts">0</div>
+                </div>
+                <div class="card">
+                    <h3>Average Score</h3>
+                    <div class="stat-number" id="detail-avg-score">0%</div>
+                </div>
+                <div class="card">
+                    <h3>Highest Score</h3>
+                    <div class="stat-number" id="detail-high-score">0%</div>
+                </div>
+                <div class="card">
+                    <h3>Lowest Score</h3>
+                    <div class="stat-number" id="detail-low-score">0%</div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 20px;">
+                <h3>Performance Over Time</h3>
+                <canvas id="student-detail-chart"></canvas>
+            </div>
+
+            <h3>All Attempts (Attempt by Attempt)</h3>
+            <table id="student-detail-attempts-table" class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Quiz</th>
+                        <th>Date & Time</th>
+                        <th>Score</th>
+                        <th>Points</th>
+                        <th>Correct</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="student-detail-attempts-list">
+                    <!-- Attempts will be listed here -->
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ATTEMPT DETAIL VIEW -->
+        <section id="attempt-detail-view" class="view-section">
+            <div style="margin-bottom: 20px;">
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showStudentDetail()">Back to Student</button>
+            </div>
+            <h2 id="attempt-detail-title">Attempt Details</h2>
+            
+            <div class="card" style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <p><strong>Student:</strong> <span id="attempt-student-name"></span></p>
+                        <p><strong>Quiz:</strong> <span id="attempt-quiz-title"></span></p>
+                        <p><strong>Date:</strong> <span id="attempt-date"></span></p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p><strong>Score:</strong> <span id="attempt-score" style="font-size: 1.5em; font-weight: bold;"></span></p>
+                        <p><strong>Points:</strong> <span id="attempt-points"></span></p>
+                        <p><strong>Time Taken:</strong> <span id="attempt-duration"></span></p>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Question-by-Question Breakdown</h3>
+            <div id="attempt-questions-container">
+                <!-- Questions will be listed here -->
+            </div>
+        </section>
+
+        <!-- GRADING QUEUE VIEW -->
+        <section id="grading-queue-view" class="view-section">
+            <div style="margin-bottom: 20px;">
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showTeacherDashboard()">Back to Dashboard</button>
+            </div>
+            <h2>Grading Queue</h2>
+            
+            <div class="card" style="margin-bottom: 20px;">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <label>Filter by Status:</label>
+                    <select id="grading-filter-status" style="padding: 8px;" onchange="app.renderGradingQueue()">
+                        <option value="">All</option>
+                        <option value="pending">Pending Review</option>
+                        <option value="graded">Graded</option>
+                        <option value="reviewed">Reviewed</option>
+                    </select>
+                    <label>Filter by Quiz:</label>
+                    <select id="grading-filter-quiz" style="padding: 8px;" onchange="app.renderGradingQueue()">
+                        <option value="">All Quizzes</option>
+                    </select>
+                </div>
+            </div>
+
+            <table id="grading-queue-table" class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Quiz</th>
+                        <th>Score</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="grading-queue-list">
+                    <!-- Grading items -->
+                </tbody>
+            </table>
+        </section>
+
+        <!-- GRADING DETAIL VIEW -->
+        <section id="grading-detail-view" class="view-section">
+            <div style="margin-bottom: 20px;">
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showGradingQueue()">Back to Queue</button>
+            </div>
+            <h2 id="grading-detail-title">Grade Submission</h2>
+            
+            <div class="card" style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <p><strong>Student:</strong> <span id="grading-student-name"></span></p>
+                        <p><strong>Quiz:</strong> <span id="grading-quiz-title"></span></p>
+                        <p><strong>Auto Score:</strong> <span id="grading-auto-score"></span>%</p>
+                    </div>
+                    <div>
+                        <label>Manual Score Override:</label>
+                        <input type="number" id="grading-manual-score" min="0" max="100" style="padding: 8px; width: 100px; margin-left: 10px;">
+                        <button class="btn btn-success" style="width: auto; margin-top: 10px;" onclick="app.saveGrading()">Save Grading</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="grading-questions-container">
+                <!-- Questions with answers for grading -->
+            </div>
+        </section>
+
+        <!-- TEACHER ANALYTICS VIEW -->
+        <section id="teacher-analytics-view" class="view-section">
+            <div style="margin-bottom: 20px;">
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showTeacherDashboard()">Back to Dashboard</button>
+            </div>
+            <h2>Analytics Dashboard</h2>
+            
+            <div class="dashboard-grid" style="margin-bottom: 30px;">
+                <div class="card">
+                    <h3>Total Students</h3>
+                    <div class="stat-number" id="analytics-total-students">0</div>
+                </div>
+                <div class="card">
+                    <h3>Total Attempts</h3>
+                    <div class="stat-number" id="analytics-total-attempts">0</div>
+                </div>
+                <div class="card">
+                    <h3>Average Score</h3>
+                    <div class="stat-number" id="analytics-avg-score">0%</div>
+                </div>
+                <div class="card">
+                    <h3>Completion Rate</h3>
+                    <div class="stat-number" id="analytics-completion-rate">0%</div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 20px;">
+                <h3>Score Distribution</h3>
+                <canvas id="score-distribution-chart"></canvas>
+            </div>
+
+            <div class="card" style="margin-bottom: 20px;">
+                <h3>Topic Performance</h3>
+                <canvas id="topic-heatmap-chart"></canvas>
+            </div>
+
+            <div class="card">
+                <h3>Quiz Comparison</h3>
+                <select id="analytics-quiz-select" style="padding: 8px; margin-bottom: 15px;" onchange="app.renderQuizComparison()">
+                    <option value="">Select a quiz...</option>
+                </select>
+                <canvas id="quiz-comparison-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- STUDENT ANALYTICS VIEW -->
+        <section id="student-analytics-view" class="view-section">
+            <div style="margin-bottom: 20px;">
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showStudentDashboard()">Back to Dashboard</button>
+            </div>
+            <h2>Your Performance Analytics</h2>
+            
+            <div class="dashboard-grid" style="margin-bottom: 30px;">
+                <div class="card">
+                    <h3>Total Attempts</h3>
+                    <div class="stat-number" id="student-stats-attempts">0</div>
+                </div>
+                <div class="card">
+                    <h3>Average Score</h3>
+                    <div class="stat-number" id="student-stats-avg">0%</div>
+                </div>
+                <div class="card">
+                    <h3>Highest Score</h3>
+                    <div class="stat-number" id="student-stats-high">0%</div>
+                </div>
+                <div class="card">
+                    <h3>Improvement</h3>
+                    <div class="stat-number" id="student-stats-improvement">0%</div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 20px;">
+                <h3>Performance Over Time</h3>
+                <canvas id="performance-over-time-chart"></canvas>
+            </div>
+
+            <div class="card">
+                <h3>Topic Distribution</h3>
+                <canvas id="topic-distribution-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- QUIZ STATISTICS VIEW -->
+        <section id="quiz-statistics-view" class="view-section">
+            <div style="margin-bottom: 20px;">
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showTeacherDashboard()">Back to Dashboard</button>
+            </div>
+            <h2 id="quiz-stats-title">Quiz Statistics</h2>
+            
+            <div class="dashboard-grid" style="margin-bottom: 20px;">
+                <div class="card">
+                    <h3>Total Attempts</h3>
+                    <div class="stat-number" id="quiz-stats-attempts">0</div>
+                </div>
+                <div class="card">
+                    <h3>Average Score</h3>
+                    <div class="stat-number" id="quiz-stats-avg-score">0%</div>
+                </div>
+                <div class="card">
+                    <h3>Completion Rate</h3>
+                    <div class="stat-number" id="quiz-stats-completion">0%</div>
+                </div>
+                <div class="card">
+                    <h3>Pass Rate</h3>
+                    <div class="stat-number" id="quiz-stats-pass-rate">0%</div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 20px;">
+                <h3>Score Distribution</h3>
+                <canvas id="quiz-stats-score-chart"></canvas>
+            </div>
+
+            <div class="card" style="margin-bottom: 20px;">
+                <h3>Question Performance</h3>
+                <div id="quiz-stats-questions">
+                    <!-- Question statistics will be listed here -->
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Recent Attempts</h3>
+                <table style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Date</th>
+                            <th>Score</th>
+                            <th>Time Taken</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="quiz-stats-recent-attempts">
+                        <!-- Recent attempts -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- LEADERBOARD VIEW -->
+        <section id="leaderboard-view" class="view-section">
+             <div style="margin-bottom: 20px;">
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showStudentDashboard()">Back to Dashboard</button>
+            </div>
+            <h2>Global Leaderboard</h2>
+            <div class="card">
+                <table id="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Student</th>
+                            <th>Total Score</th>
+                            <th>Quizzes Taken</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-list">
+                        <!-- Rankings -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SEND NOTIFICATION VIEW -->
+        <section id="send-notification-view" class="view-section">
+            <div style="margin-bottom: 20px;">
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showNotificationCenter()">← Back</button>
+            </div>
+            <h2>Send Notification</h2>
+
+            <div class="card" style="max-width: 800px; margin: 0 auto;">
+                <div class="form-group">
+                    <label>Notification Type *</label>
+                    <select id="send-notification-type" class="form-control">
+                        <option value="info">Info</option>
+                        <option value="success">Success</option>
+                        <option value="warning">Warning</option>
+                        <option value="error">Error</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Title *</label>
+                    <input type="text" id="send-notification-title" class="form-control" placeholder="Enter notification title">
+                </div>
+
+                <div class="form-group">
+                    <label>Message *</label>
+                    <textarea id="send-notification-message" class="form-control" rows="5" placeholder="Enter notification message"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Send To *</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button class="btn" style="width: auto;" onclick="app.showSendNotificationRecipients('users')">👤 Select Users</button>
+                        <button class="btn" style="width: auto;" onclick="app.showSendNotificationRecipients('groups')">👥 Select Groups</button>
+                        <button class="btn" style="width: auto;" onclick="app.showSendNotificationRecipients('all')">🌐 All Users</button>
+                    </div>
+                    <div id="send-notification-recipients" style="min-height: 50px; padding: 10px; background: #f8f9fa; border-radius: 4px; border: 1px solid #ddd;">
+                        <span style="color: #666;">No recipients selected</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="send-notification-category" class="form-control">
+                        <option value="system">System</option>
+                        <option value="quiz">Quiz</option>
+                        <option value="grading">Grading</option>
+                        <option value="user">User</option>
+                        <option value="achievement">Achievement</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn btn-success" onclick="app.sendNotification()">📤 Send Notification</button>
+                    <button class="btn" style="background: #7f8c8d;" onclick="app.showNotificationCenter()">Cancel</button>
+                </div>
+            </div>
+
+            <!-- Recipient Selection Modal -->
+            <div id="notification-recipient-modal" class="modal-overlay" style="display: none;">
+                <div class="modal-content" style="max-width: 600px;">
+                    <div class="modal-header">
+                        <h2 id="recipient-modal-title">Select Recipients</h2>
+                        <button class="modal-close" onclick="app.closeRecipientModal()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="recipient-selection-content">
+                            <!-- Content will be populated dynamically -->
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-success" onclick="app.confirmRecipientSelection()">Confirm Selection</button>
+                        <button class="btn" style="background: #7f8c8d;" onclick="app.closeRecipientModal()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- NOTIFICATION CENTER VIEW -->
+        <section id="notification-center-view" class="view-section">
+            <div style="margin-bottom: 20px;">
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showNotificationCenter()">← Back</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <h2 style="margin: 0;">Notifications</h2>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn" id="send-notification-btn" style="width: auto; background: #2ecc71; display: none;" onclick="app.showSendNotification()">📤 Send Notification</button>
+                    <button class="btn" style="width: auto; background: #3498db;" onclick="notificationCenter.markAllAsRead(); notificationCenter.renderNotificationCenter();">Mark All Read</button>
+                    <button class="btn" style="width: auto; background: #e74c3c;" onclick="app.clearAllNotifications()">Clear All</button>
+                    <button class="btn" style="width: auto; background: #9b59b6;" onclick="app.showNotificationSettings()">⚙️ Settings</button>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 20px;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                    <input type="text" id="notification-search" placeholder="🔍 Search notifications..." class="form-control" style="flex: 1; min-width: 200px;" oninput="notificationCenter.renderNotificationCenter()">
+                    <select id="notification-filter" class="form-control" style="width: 150px;" onchange="notificationCenter.renderNotificationCenter()">
+                        <option value="all">All</option>
+                        <option value="unread">Unread</option>
+                    </select>
+                    <select id="notification-category-filter" class="form-control" style="width: 150px;" onchange="notificationCenter.renderNotificationCenter()">
+                        <option value="all">All Categories</option>
+                        <option value="system">System</option>
+                        <option value="quiz">Quiz</option>
+                        <option value="grading">Grading</option>
+                        <option value="user">User</option>
+                        <option value="achievement">Achievement</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="notification-center-list" class="notification-list">
+                <!-- Notifications will be rendered here -->
+            </div>
+        </section>
+
+        <!-- QUIZ PASSWORD VIEW -->
+        <section id="quiz-password-view" class="view-section">
+            <div class="login-container">
+                <h2>Quiz Password Required</h2>
+                <p id="quiz-password-title"></p>
+                <div class="form-group">
+                    <label>Enter Quiz Password</label>
+                    <input type="password" id="quiz-password-input" placeholder="Password">
+                </div>
+                <button class="btn" onclick="app.verifyQuizPassword()">Continue</button>
+                <button class="btn" style="background: #7f8c8d; margin-top: 10px;" onclick="app.showStudentDashboard()">Cancel</button>
+            </div>
+        </section>
+
+        <!-- QUIZ INSTRUCTIONS VIEW -->
+        <section id="quiz-instructions-view" class="view-section">
+            <div class="card" style="max-width: 800px; margin: 50px auto;">
+                <h2 id="instructions-quiz-title">Quiz Instructions</h2>
+                <div id="quiz-instructions-content" style="margin: 20px 0; line-height: 1.8;">
+                    <!-- Instructions will be shown here -->
+                </div>
+                <div style="margin-top: 30px;">
+                    <button class="btn btn-success" onclick="app.startQuizAfterInstructions()">Start Quiz</button>
+                    <button class="btn" style="background: #7f8c8d; margin-left: 10px;" onclick="app.showStudentDashboard()">Cancel</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- QUIZ TAKER VIEW -->
+        <section id="quiz-taker-view" class="view-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 id="taking-quiz-title">Quiz Title</h2>
+                <div class="timer" id="quiz-timer">10:00</div>
+            </div>
+            
+            <div id="quiz-question-container" class="card">
+                <!-- Question content -->
+            </div>
+
+            <div style="margin-top: 20px; display: flex; justify-content: space-between;">
+                <button class="btn" style="width: auto;" id="btn-prev" onclick="app.prevQuestion()">Previous</button>
+                <button class="btn" style="width: auto;" id="btn-next" onclick="app.nextQuestion()">Next</button>
+                <button class="btn btn-success hidden" style="width: auto;" id="btn-submit" onclick="app.submitQuiz()">Submit Quiz</button>
+            </div>
+        </section>
+
+        <!-- RESULT VIEW -->
+        <section id="result-view" class="view-section">
+            <div class="card" style="text-align: center;">
+                <h2>Quiz Completed!</h2>
+                <div class="stat-number" id="result-score" style="font-size: 4rem; margin: 20px 0;">85%</div>
+                <p id="result-message">Great job!</p>
+                <div id="result-actions-container"></div>
+            </div>
+        </section>
+
+        <!-- SETTINGS VIEW -->
+        <section id="settings-view" class="view-section">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">⚙️ Settings & Preferences</h2>
+                    <p class="section-subtitle">Customize your QuizMaster experience</p>
+                </div>
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showDashboard()">← Back</button>
+            </div>
+
+            <div class="grid grid-2">
+                <!-- User Preferences -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-icon">👤</span>
+                            User Preferences
+                        </h3>
+                    </div>
+                    <div class="form-group">
+                        <label>Display Name</label>
+                        <input type="text" id="settings-display-name" class="form-control" placeholder="Your display name">
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="settings-email" class="form-control" placeholder="your.email@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Theme</label>
+                        <select id="settings-theme" class="form-control" onchange="app.updateTheme(this.value)">
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                            <option value="auto">Auto (System)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Language</label>
+                        <select id="settings-language" class="form-control">
+                            <option value="en">English</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                            <option value="de">German</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="app.saveUserPreferences()">Save Preferences</button>
+                </div>
+
+                <!-- Notification Settings -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-icon">🔔</span>
+                            Notifications
+                        </h3>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="settings-notify-email" style="width: auto;">
+                            Email Notifications
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="settings-notify-sound" style="width: auto;">
+                            Sound Notifications
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Notification Frequency</label>
+                        <select id="settings-notify-frequency" class="form-control">
+                            <option value="immediate">Immediate</option>
+                            <option value="hourly">Hourly Digest</option>
+                            <option value="daily">Daily Digest</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="app.saveNotificationSettings()">Save Settings</button>
+                </div>
+
+                <!-- Quiz Preferences -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-icon">📝</span>
+                            Quiz Preferences
+                        </h3>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="settings-auto-save" style="width: auto;">
+                            Auto-save Quiz Progress
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="settings-show-hints" style="width: auto;">
+                            Show Hints During Quiz
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Default Time Limit (minutes)</label>
+                        <input type="number" id="settings-default-time" class="form-control" value="10" min="1">
+                    </div>
+                    <button class="btn btn-primary" onclick="app.saveQuizPreferences()">Save Preferences</button>
+                </div>
+
+                <!-- System Settings -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-icon">🖥️</span>
+                            System Settings
+                        </h3>
+                    </div>
+                    <div class="form-group">
+                        <label>Data Export Format</label>
+                        <select id="settings-export-format" class="form-control">
+                            <option value="json">JSON</option>
+                            <option value="csv">CSV</option>
+                            <option value="xlsx">Excel</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="settings-enable-analytics" style="width: auto;" checked>
+                            Enable Analytics
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="settings-enable-offline" style="width: auto;" checked>
+                            Enable Offline Mode
+                        </label>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-danger" onclick="app.clearUserData()" style="width: 100%;">Clear All Data</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- HELP & DOCUMENTATION VIEW -->
+        <section id="help-view" class="view-section">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">📚 Help & Documentation</h2>
+                    <p class="section-subtitle">Get help and learn about QuizMaster features</p>
+                </div>
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showDashboard()">← Back</button>
+            </div>
+
+            <div class="grid grid-2">
+                <!-- Quick Start Guide -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-icon">🚀</span>
+                            Quick Start Guide
+                        </h3>
+                    </div>
+                    <div>
+                        <h4>For Teachers</h4>
+                        <ol style="padding-left: 20px; line-height: 2;">
+                            <li>Create quizzes with multiple question types</li>
+                            <li>Assign quizzes to students or groups</li>
+                            <li>Set grading modes and result visibility</li>
+                            <li>Monitor student performance and analytics</li>
+                        </ol>
+                        <h4 style="margin-top: 20px;">For Students</h4>
+                        <ol style="padding-left: 20px; line-height: 2;">
+                            <li>View available quizzes in your dashboard</li>
+                            <li>Start quizzes and answer questions</li>
+                            <li>Review results and explanations</li>
+                            <li>Track your progress over time</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- Features -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-icon">✨</span>
+                            Key Features
+                        </h3>
+                    </div>
+                    <div>
+                        <ul style="line-height: 2;">
+                            <li>✅ Multiple question types (MCQ, True/False, Short Answer, etc.)</li>
+                            <li>✅ Media support (Images, Videos)</li>
+                            <li>✅ Automatic and manual grading</li>
+                            <li>✅ Advanced analytics and reporting</li>
+                            <li>✅ Student groups and assignment management</li>
+                            <li>✅ Quiz scheduling and password protection</li>
+                            <li>✅ Offline mode support</li>
+                            <li>✅ Notification system</li>
+                            <li>✅ Export/Import functionality</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- FAQ -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-icon">❓</span>
+                            Frequently Asked Questions
+                        </h3>
+                    </div>
+                    <div>
+                        <div style="margin-bottom: 20px;">
+                            <strong>Q: How do I create a quiz?</strong>
+                            <p style="margin-top: 5px; color: var(--text-muted);">A: Go to Teacher Dashboard → Create Quiz, fill in the details, add questions, and save.</p>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <strong>Q: Can I edit a quiz after creating it?</strong>
+                            <p style="margin-top: 5px; color: var(--text-muted);">A: Yes! Click the Edit button (✏️) next to any quiz in your dashboard.</p>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <strong>Q: How does grading work?</strong>
+                            <p style="margin-top: 5px; color: var(--text-muted);">A: You can choose automatic grading (instant) or manual grading (review and grade later).</p>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <strong>Q: Can students retake quizzes?</strong>
+                            <p style="margin-top: 5px; color: var(--text-muted);">A: Yes, if you enable "Allow Retake" when creating the quiz.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Keyboard Shortcuts -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-icon">⌨️</span>
+                            Keyboard Shortcuts
+                        </h3>
+                    </div>
+                    <div>
+                        <div style="margin-bottom: 15px;">
+                            <kbd style="background: var(--steel-200); padding: 4px 8px; border-radius: 4px; font-family: monospace;">Ctrl + S</kbd>
+                            <span style="margin-left: 10px;">Save Quiz</span>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <kbd style="background: var(--steel-200); padding: 4px 8px; border-radius: 4px; font-family: monospace;">Esc</kbd>
+                            <span style="margin-left: 10px;">Close Modal/Dialog</span>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <kbd style="background: var(--steel-200); padding: 4px 8px; border-radius: 4px; font-family: monospace;">Ctrl + /</kbd>
+                            <span style="margin-left: 10px;">Show Help</span>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <kbd style="background: var(--steel-200); padding: 4px 8px; border-radius: 4px; font-family: monospace;">Ctrl + K</kbd>
+                            <span style="margin-left: 10px;">Quick Search</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ADVANCED ANALYTICS VIEW -->
+        <section id="advanced-analytics-view" class="view-section">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">📊 Advanced Analytics</h2>
+                    <p class="section-subtitle">Comprehensive insights and performance metrics</p>
+                </div>
+                <button class="btn" style="width: auto; background: #7f8c8d;" onclick="app.showDashboard()">← Back</button>
+            </div>
+
+            <div class="grid grid-4" style="margin-bottom: 30px;">
+                <div class="stat-card">
+                    <div class="stat-label">Total Quizzes</div>
+                    <div class="stat-value" id="analytics-total-quizzes">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Attempts</div>
+                    <div class="stat-value" id="analytics-total-attempts">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Average Score</div>
+                    <div class="stat-value" id="analytics-avg-score">0%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Students</div>
+                    <div class="stat-value" id="analytics-active-students">0</div>
+                </div>
+            </div>
+
+            <div class="grid grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-icon">📈</span>
+                            Performance Trends
+                        </h3>
+                    </div>
+                    <canvas id="analytics-trends-chart"></canvas>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-icon">🎯</span>
+                            Score Distribution
+                        </h3>
+                    </div>
+                    <canvas id="analytics-distribution-chart"></canvas>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-icon">📚</span>
+                            Quiz Performance
+                        </h3>
+                    </div>
+                    <canvas id="analytics-quiz-performance-chart"></canvas>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-icon">👥</span>
+                            Student Engagement
+                        </h3>
+                    </div>
+                    <canvas id="analytics-engagement-chart"></canvas>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-overlay-content">
+            <div class="loading-spinner"></div>
+            <p style="margin-top: 15px;">Loading...</p>
+        </div>
+    </div>
+
+    <script src="assets/js/storage.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/questionBank.js"></script>
+    <script src="assets/js/analytics.js"></script>
+    <script src="assets/js/reporting.js"></script>
+    <script src="assets/js/security.js"></script>
+    <script src="assets/js/offline.js"></script>
+    <script src="assets/js/notifications.js"></script>
+    <script src="assets/js/modal.js"></script>
+    <script src="assets/js/popup.js"></script>
+    <script src="assets/js/notificationCenter.js"></script>
+    <script src="assets/js/app.js"></script>
+</body>
+</html>
